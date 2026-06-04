@@ -8,7 +8,7 @@ if not ok or not Rayfield then
 end
 
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local player  = Players.LocalPlayer
 
 local ModuleScript = game:GetService("ReplicatedFirst"):FindFirstChildOfClass("ModuleScript")
 local v1
@@ -45,7 +45,6 @@ local Window = Rayfield:CreateWindow({
 -- ══════════════════════════════
 local TeleportTab = Window:CreateTab("Teleport", 4483345998)
 TeleportTab:CreateSection("NPCs")
-
 TeleportTab:CreateButton({
     Name = "Secret Dealer",
     Description = "Teleport to the hidden Secret Dealer NPC",
@@ -71,148 +70,12 @@ TeleportTab:CreateButton({
 })
 
 -- ══════════════════════════════
--- SAM QUEST TAB
--- ══════════════════════════════
-local SamTab = Window:CreateTab("Sam Quest", 4483345998)
-SamTab:CreateSection("Auto Quest")
-
-local autoSamRunning = false
-
-local function autoSamLoop()
-    while autoSamRunning do
-        local ok2, data = pcall(getData)
-        if ok2 and data then
-            local q = data.Quests
-            local merchantObj = player:FindFirstChild("CurrentMerchant")
-            local merchant = merchantObj and merchantObj.Value
-            if q and not data.Stats.CompletedStarterCompass and q.Active ~= "Help Sam" then
-                fire("QuestEvents", { "Accept", "Help Sam" })
-                Rayfield:Notify({ Title="Sam", Content="Quest accepted!", Duration=2 })
-                task.wait(1)
-            elseif q and q.Active == "Help Sam" and q.Completed == true then
-                fire("QuestEvents", { "Claim" })
-                Rayfield:Notify({ Title="Sam", Content="Reward claimed!", Duration=2 })
-                task.wait(2)
-            elseif merchant and data.Stats and data.Stats.Compass >= 1 and q and q.Active ~= "Help Sam" then
-                fire("Sam", { "ClaimAmount", merchant, 1 })
-                Rayfield:Notify({ Title="Sam", Content="Compass claimed!", Duration=2 })
-                task.wait(2)
-            end
-        end
-        task.wait(3)
-    end
-end
-
-SamTab:CreateToggle({
-    Name = "Auto Claim Sam Quest", CurrentValue=false, Flag="AutoSam",
-    Description = "Auto accept, complete และ claim reward จาก Sam",
-    Callback = function(v)
-        autoSamRunning = v
-        if v then task.spawn(autoSamLoop) end
-        Rayfield:Notify({ Title="Sam", Content=v and "เปิดแล้ว!" or "ปิดแล้ว", Duration=2 })
-    end,
-})
-
-SamTab:CreateButton({
-    Name = "Claim Compass 1x ทันที", Description="Claim compass 1 ใบทันที",
-    Callback = function()
-        local merchantObj = player:FindFirstChild("CurrentMerchant")
-        local merchant = merchantObj and merchantObj.Value
-        if merchant then
-            fire("Sam", { "ClaimAmount", merchant, 1 })
-            Rayfield:Notify({ Title="Compass", Content="Claimed 1 compass!", Duration=3 })
-        else
-            Rayfield:Notify({ Title="Error", Content="ไปคุย Sam ก่อน", Duration=3 })
-        end
-    end,
-})
-
--- ══════════════════════════════
--- FISHERMAN QUEST TAB
--- ══════════════════════════════
-local FishTab = Window:CreateTab("Fisherman", 4483345998)
-FishTab:CreateSection("Auto Quest")
-
-local autoFishRunning = false
-local fishList = {
-    "Large Busser", "Large Flooper", "Large Jawber", "Large Lubber",
-    "Medium Busser", "Medium Flooper", "Medium Jawber", "Medium Lubber",
-    "Small Busser", "Small Flooper", "Small Jawber", "Small Lubber"
-}
-
-local function autoFishLoop()
-    while autoFishRunning do
-        local ok2, data = pcall(getData)
-        if ok2 and data and data.Quests then
-            local q = data.Quests
-            local history = q.History or {}
-            if not history["Fisherman's Favor"] and q.Active ~= "Fisherman's Favor" then
-                fire("QuestEvents", { "Accept", "Fisherman's Favor" })
-                Rayfield:Notify({ Title="Fisherman", Content="Favor accepted!", Duration=2 })
-                task.wait(1)
-            elseif q.Active == "Fisherman's Favor" and q.Completed == true then
-                fire("QuestEvents", { "Claim" })
-                Rayfield:Notify({ Title="Fisherman", Content="Favor claimed!", Duration=2 })
-                task.wait(2)
-            elseif history["Fisherman's Favor"] and not history["Fisherman's Task"]
-                and q.Active ~= "Fisherman's Task" and q.Active ~= "Fisherman's Favor" then
-                fire("QuestEvents", { "Accept", "Fisherman's Task" })
-                Rayfield:Notify({ Title="Fisherman", Content="Task accepted!", Duration=2 })
-                task.wait(1)
-            elseif q.Active == "Fisherman's Task" then
-                if q.Completed == true then
-                    fire("QuestEvents", { "Claim" })
-                    Rayfield:Notify({ Title="Fisherman", Content="Task claimed!", Duration=2 })
-                    task.wait(2)
-                else
-                    for _, fish in ipairs(fishList) do
-                        fire("QuestEvents", { "Deliver", fish })
-                    end
-                    task.wait(2)
-                end
-            elseif history["Fisherman's Task"] and q.Active ~= "Fisherman's Challenge" then
-                fire("QuestEvents", { "Accept", "Fisherman's Challenge" })
-                Rayfield:Notify({ Title="Fisherman", Content="Challenge accepted!", Duration=2 })
-                task.wait(1)
-            elseif q.Active == "Fisherman's Challenge" and q.Completed == true then
-                fire("QuestEvents", { "Claim" })
-                Rayfield:Notify({ Title="Fisherman", Content="Super Rod claimed!", Duration=3 })
-                task.wait(2)
-            end
-        end
-        task.wait(3)
-    end
-end
-
-FishTab:CreateToggle({
-    Name = "Auto Fisherman Quest", CurrentValue=false, Flag="AutoFish",
-    Description = "Auto ทำ quest Favor → Task → Challenge ครบ",
-    Callback = function(v)
-        autoFishRunning = v
-        if v then task.spawn(autoFishLoop) end
-        Rayfield:Notify({ Title="Fisherman", Content=v and "เปิดแล้ว!" or "ปิดแล้ว", Duration=2 })
-    end,
-})
-
-FishTab:CreateButton({
-    Name = "Deliver Fish ทันที", Description="ส่ง fish list ทุกตัวให้ Fisherman ครั้งเดียว",
-    Callback = function()
-        for _, fish in ipairs(fishList) do
-            fire("QuestEvents", { "Deliver", fish })
-        end
-        Rayfield:Notify({ Title="Fisherman", Content="ส่ง fish ทุกตัวแล้ว!", Duration=3 })
-    end,
-})
-
--- ══════════════════════════════
 -- AUTO CHEST TAB
 -- ══════════════════════════════
 local ChestTab = Window:CreateTab("Auto Chest", 4483345998)
 ChestTab:CreateSection("Chest Farmer")
-
 local autoChestRunning = false
 local chestDelay = 0.5
-
 local function teleportToChest(chest)
     local character = player.Character
     if not character then return end
@@ -221,7 +84,6 @@ local function teleportToChest(chest)
     local root = chest:FindFirstChildWhichIsA("BasePart") or (chest:IsA("BasePart") and chest)
     if root then hrp.CFrame = root.CFrame * CFrame.new(0, 0, 2) end
 end
-
 local function autoChestLoop()
     while autoChestRunning do
         local chestsFolder = workspace:FindFirstChild("Chests")
@@ -235,7 +97,6 @@ local function autoChestLoop()
         task.wait(1)
     end
 end
-
 ChestTab:CreateToggle({
     Name = "Auto Chest", CurrentValue=false, Flag="AutoChest",
     Description = "วิ่งเก็บ chest ทุกตัวใน workspace.Chests",
@@ -245,13 +106,11 @@ ChestTab:CreateToggle({
         Rayfield:Notify({ Title="Chest", Content=v and "เริ่มแล้ว!" or "หยุดแล้ว", Duration=2 })
     end,
 })
-
 ChestTab:CreateSlider({
     Name = "Delay ระหว่าง Chest", Range={0.1,3}, Increment=0.1,
     Suffix="s", CurrentValue=0.5, Flag="ChestDelay",
     Callback = function(v) chestDelay = v end,
 })
-
 ChestTab:CreateButton({
     Name = "เก็บ Chest 1 รอบ (Manual)", Description="วิ่งเก็บทุก chest 1 รอบทันที",
     Callback = function()
@@ -273,560 +132,188 @@ ChestTab:CreateButton({
 -- ══════════════════════════════
 local FruitTab = Window:CreateTab("Auto Fruit", 4483345998)
 FruitTab:CreateSection("Fruit Farmer")
-
 local autoFruitRunning = false
 local fruitDelay = 0.5
-
 local function getFruitList()
     local fruits = workspace:FindFirstChild("MapFolder")
         and workspace.MapFolder:FindFirstChild("Fruits")
     if not fruits then return {} end
-
     local children = fruits:GetChildren()
     local list = {}
-
-    local namedFruits = {
-        "Apple", "Banana", "Cantaloupe",
-        "Golden Apple", "Green Apple",
-        "Melon", "Prickly Pear"
-    }
+    local namedFruits = { "Apple", "Banana", "Cantaloupe", "Golden Apple", "Green Apple", "Melon", "Prickly Pear" }
     for _, name in ipairs(namedFruits) do
         local f = fruits:FindFirstChild(name)
         if f then table.insert(list, f) end
     end
-
-    local indexes = {6, 7, 8, 10, 13}
-    for _, idx in ipairs(indexes) do
+    for _, idx in ipairs({6,7,8,10,13}) do
         if children[idx] then
             local already = false
-            for _, existing in ipairs(list) do
-                if existing == children[idx] then already = true break end
-            end
-            if not already then
-                table.insert(list, children[idx])
-            end
+            for _, e in ipairs(list) do if e == children[idx] then already = true break end end
+            if not already then table.insert(list, children[idx]) end
         end
     end
-
     return list
 end
-
--- ดึง fruit เข้าหา character แทนการ teleport
 local function collectFruit(fruit)
     local character = player.Character
     if not character then return end
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local root
-    if fruit:IsA("BasePart") then
-        root = fruit
-    elseif fruit:IsA("Model") then
-        root = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart")
-    else
-        root = fruit:FindFirstChildWhichIsA("BasePart")
-    end
-
+    if fruit:IsA("BasePart") then root = fruit
+    elseif fruit:IsA("Model") then root = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart")
+    else root = fruit:FindFirstChildWhichIsA("BasePart") end
     if not root then return end
-
-    -- ดึง fruit มาหน้า character
     root.CFrame = hrp.CFrame * CFrame.new(0, 0, -2)
     task.wait(0.05)
-
-    -- ยิง ProximityPrompt ถ้ามี
-    local prompt = fruit:FindFirstChildOfClass("ProximityPrompt")
-        or fruit:FindFirstChildWhichIsA("ProximityPrompt")
-    if prompt then
-        pcall(fireproximityprompt, prompt)
-    end
+    local prompt = fruit:FindFirstChildOfClass("ProximityPrompt") or fruit:FindFirstChildWhichIsA("ProximityPrompt")
+    if prompt then pcall(fireproximityprompt, prompt) end
 end
-
 local function autoFruitLoop()
     while autoFruitRunning do
         local fruitList = getFruitList()
         if #fruitList == 0 then
-            Rayfield:Notify({ Title="Fruit", Content="ไม่พบ Fruit ใน MapFolder!", Duration=3 })
+            Rayfield:Notify({ Title="Fruit", Content="ไม่พบ Fruit!", Duration=3 })
             task.wait(5)
         else
             for _, fruit in ipairs(fruitList) do
                 if not autoFruitRunning then break end
-                pcall(collectFruit, fruit)
-                task.wait(fruitDelay)
+                pcall(collectFruit, fruit) task.wait(fruitDelay)
             end
         end
         task.wait(2)
     end
 end
-
-FruitTab:CreateToggle({
-    Name = "Auto Collect Fruit",
-    CurrentValue = false,
-    Flag = "AutoFruit",
-    Description = "ดึง Fruit เข้า Character อัตโนมัติ",
-    Callback = function(v)
-        autoFruitRunning = v
-        if v then task.spawn(autoFruitLoop) end
-        Rayfield:Notify({
-            Title = "Fruit",
-            Content = v and "เริ่มเก็บ Fruit แล้ว!" or "หยุดแล้ว",
-            Duration = 2
-        })
-    end,
-})
-
-FruitTab:CreateSlider({
-    Name = "Delay ระหว่าง Fruit",
-    Range = {0.1, 3},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = 0.5,
-    Flag = "FruitDelay",
-    Callback = function(v)
-        fruitDelay = v
-    end,
-})
-
-FruitTab:CreateButton({
-    Name = "เก็บ Fruit 1 รอบ (Manual)",
-    Description = "ดึง Fruit ทุกตัวเข้า Character 1 รอบทันที",
-    Callback = function()
-        local fruitList = getFruitList()
-        local count = 0
-        for _, fruit in ipairs(fruitList) do
-            local s = pcall(collectFruit, fruit)
-            if s then count += 1 end
-            task.wait(fruitDelay)
-        end
-        Rayfield:Notify({
-            Title = "Fruit",
-            Content = "เก็บครบ " .. count .. "/" .. #fruitList .. " fruit!",
-            Duration = 3
-        })
-    end,
-})
-
-FruitTab:CreateButton({
-    Name = "แสดง Fruit ที่พบ",
-    Description = "แสดงรายชื่อ Fruit ทั้งหมดใน console",
-    Callback = function()
-        local fruitList = getFruitList()
-        print("=== Fruit List (" .. #fruitList .. " ตัว) ===")
-        for i, f in ipairs(fruitList) do
-            print(i, f.Name, f:GetFullName())
-        end
-        Rayfield:Notify({
-            Title = "Fruit",
-            Content = "พบ " .. #fruitList .. " fruit → ดูใน console (F9)",
-            Duration = 4
-        })
-    end,
-})
+FruitTab:CreateToggle({ Name="Auto Collect Fruit", CurrentValue=false, Flag="AutoFruit", Description="ดึง Fruit เข้า Character อัตโนมัติ",
+    Callback=function(v) autoFruitRunning=v if v then task.spawn(autoFruitLoop) end Rayfield:Notify({Title="Fruit",Content=v and "เริ่ม!" or "หยุด",Duration=2}) end })
+FruitTab:CreateSlider({ Name="Delay ระหว่าง Fruit", Range={0.1,3}, Increment=0.1, Suffix="s", CurrentValue=0.5, Flag="FruitDelay", Callback=function(v) fruitDelay=v end })
+FruitTab:CreateButton({ Name="เก็บ Fruit 1 รอบ (Manual)", Description="ดึง Fruit ทุกตัว 1 รอบทันที",
+    Callback=function() local fl=getFruitList() local c=0 for _,f in ipairs(fl) do local s=pcall(collectFruit,f) if s then c+=1 end task.wait(fruitDelay) end Rayfield:Notify({Title="Fruit",Content="เก็บ "..c.."/"..#fl,Duration=3}) end })
 
 -- ══════════════════════════════
 -- AUTO JUICE TAB
 -- ══════════════════════════════
 local JuiceTab = Window:CreateTab("Auto Juice", 4483345998)
 JuiceTab:CreateSection("Juicing Bowl")
-
 local autoJuiceRunning = false
 local juiceDelay = 0.3
-
-local function getKitchenStation()
+local function getJuiceParts()
     local path = workspace:FindFirstChild("MapFolder")
         and workspace.MapFolder:FindFirstChild("Island8")
         and workspace.MapFolder.Island8:FindFirstChild("Kitchen")
     if not path then return nil end
-    return path:GetChildren()[2]
-end
-
-local function getJuiceParts()
-    local station = getKitchenStation()
+    local station = path:GetChildren()[2]
     if not station then return nil end
     local bowl = station:FindFirstChild("JuicingBowl")
     if not bowl then return nil end
-    return {
-        mixer    = bowl:FindFirstChild("JuicingBowlMixer"),
-        bowlPart = bowl:FindFirstChild("Bowl"),
-        mixer1   = bowl:FindFirstChild("Mixer1"),
-        mixer2   = bowl:FindFirstChild("Mixer2"),
-        bowlModel = bowl,
-    }
+    return { mixer=bowl:FindFirstChild("JuicingBowlMixer"), bowlPart=bowl:FindFirstChild("Bowl"), mixer1=bowl:FindFirstChild("Mixer1"), mixer2=bowl:FindFirstChild("Mixer2") }
 end
-
-local function teleportToPart(part)
-    local character = player.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp or not part then return end
-    local root
-    if part:IsA("BasePart") then
-        root = part
-    elseif part:IsA("Model") then
-        root = part.PrimaryPart or part:FindFirstChildWhichIsA("BasePart")
-    else
-        root = part:FindFirstChildWhichIsA("BasePart")
-    end
-    if root then hrp.CFrame = root.CFrame * CFrame.new(0, 0, 2) end
+local function tpToPart(part)
+    local char=player.Character if not char then return end
+    local hrp=char:FindFirstChild("HumanoidRootPart") if not hrp or not part then return end
+    local root if part:IsA("BasePart") then root=part else root=part.PrimaryPart or part:FindFirstChildWhichIsA("BasePart") end
+    if root then hrp.CFrame=root.CFrame*CFrame.new(0,0,2) end
 end
-
-local function firePromptOnPart(part)
+local function firePrompt(part)
     if not part then return end
-    local prompt = part:FindFirstChildOfClass("ProximityPrompt")
-    if not prompt then
-        for _, child in ipairs(part:GetDescendants()) do
-            if child:IsA("ProximityPrompt") then prompt = child break end
-        end
-    end
+    local prompt=part:FindFirstChildOfClass("ProximityPrompt")
+    if not prompt then for _,c in ipairs(part:GetDescendants()) do if c:IsA("ProximityPrompt") then prompt=c break end end end
     if prompt then pcall(fireproximityprompt, prompt) end
 end
-
 local function doJuiceCycle()
-    local parts = getJuiceParts()
-    if not parts then
-        Rayfield:Notify({ Title="Juice", Content="ไม่พบ JuicingBowl!", Duration=3 })
-        return false
+    local p=getJuiceParts() if not p then Rayfield:Notify({Title="Juice",Content="ไม่พบ JuicingBowl!",Duration=3}) return false end
+    for _, part in ipairs({p.bowlPart, p.mixer1, p.mixer2, p.mixer}) do
+        tpToPart(part) task.wait(juiceDelay) firePrompt(part) task.wait(juiceDelay)
     end
-    teleportToPart(parts.bowlPart)
-    task.wait(juiceDelay)
-    firePromptOnPart(parts.bowlPart)
-    task.wait(juiceDelay)
-    teleportToPart(parts.mixer1)
-    task.wait(juiceDelay)
-    firePromptOnPart(parts.mixer1)
-    task.wait(juiceDelay)
-    teleportToPart(parts.mixer2)
-    task.wait(juiceDelay)
-    firePromptOnPart(parts.mixer2)
-    task.wait(juiceDelay)
-    teleportToPart(parts.mixer)
-    task.wait(juiceDelay)
-    firePromptOnPart(parts.mixer)
-    task.wait(juiceDelay)
     return true
 end
-
 local function autoJuiceLoop()
     while autoJuiceRunning do
-        local ok2, err = pcall(doJuiceCycle)
-        if not ok2 then
-            warn("Juice error:", err)
-            Rayfield:Notify({ Title="Juice Error", Content=tostring(err), Duration=3 })
-        end
+        local ok2,err=pcall(doJuiceCycle) if not ok2 then Rayfield:Notify({Title="Juice Error",Content=tostring(err),Duration=3}) end
         task.wait(1)
     end
 end
+JuiceTab:CreateToggle({ Name="Auto Juice", CurrentValue=false, Flag="AutoJuice", Description="Auto วน Juicing Bowl ทุก step",
+    Callback=function(v) autoJuiceRunning=v if v then task.spawn(autoJuiceLoop) end Rayfield:Notify({Title="Juice",Content=v and "เริ่ม!" or "หยุด",Duration=2}) end })
+JuiceTab:CreateSlider({ Name="Delay ระหว่าง Step", Range={0.1,2}, Increment=0.1, Suffix="s", CurrentValue=0.3, Flag="JuiceDelay", Callback=function(v) juiceDelay=v end })
+JuiceTab:CreateButton({ Name="Juice 1 รอบ (Manual)", Description="ทำ Juicing 1 รอบทันที",
+    Callback=function() task.spawn(function() local ok2,err=pcall(doJuiceCycle) Rayfield:Notify({Title="Juice",Content=ok2 and "เสร็จ!" or tostring(err),Duration=3}) end) end })
 
-JuiceTab:CreateToggle({
-    Name = "Auto Juice",
-    CurrentValue = false,
-    Flag = "AutoJuice",
-    Description = "Auto วน Juicing Bowl ทุก step อัตโนมัติ",
-    Callback = function(v)
-        autoJuiceRunning = v
-        if v then task.spawn(autoJuiceLoop) end
-        Rayfield:Notify({
-            Title = "Juice",
-            Content = v and "เริ่ม Juicing แล้ว!" or "หยุดแล้ว",
-            Duration = 2
-        })
-    end,
-})
-
-JuiceTab:CreateSlider({
-    Name = "Delay ระหว่าง Step",
-    Range = {0.1, 2},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = 0.3,
-    Flag = "JuiceDelay",
-    Callback = function(v)
-        juiceDelay = v
-    end,
-})
-
-JuiceTab:CreateButton({
-    Name = "Juice 1 รอบ (Manual)",
-    Description = "ทำ Juicing 1 รอบทันที",
-    Callback = function()
-        task.spawn(function()
-            local ok2, err = pcall(doJuiceCycle)
-            if ok2 then
-                Rayfield:Notify({ Title="Juice", Content="Juice รอบนี้เสร็จแล้ว!", Duration=3 })
-            else
-                Rayfield:Notify({ Title="Juice Error", Content=tostring(err), Duration=3 })
-            end
-        end)
-    end,
-})
-
-JuiceTab:CreateButton({
-    Name = "Teleport to JuicingBowl",
-    Description = "Teleport ไปที่ JuicingBowl ทันที",
-    Callback = function()
-        local parts = getJuiceParts()
-        if parts and parts.bowlPart then
-            teleportToPart(parts.bowlPart)
-            Rayfield:Notify({ Title="Juice", Content="Teleported to JuicingBowl!", Duration=2 })
-        else
-            Rayfield:Notify({ Title="Error", Content="ไม่พบ JuicingBowl!", Duration=3 })
-        end
-    end,
-})
-
-JuiceTab:CreateButton({
-    Name = "Debug: แสดง Parts",
-    Description = "แสดง JuicingBowl parts ใน console (F9)",
-    Callback = function()
-        local parts = getJuiceParts()
-        if not parts then
-            Rayfield:Notify({ Title="Debug", Content="ไม่พบ Station!", Duration=3 })
-            return
-        end
-        print("=== JuicingBowl Parts ===")
-        for key, part in pairs(parts) do
-            print(key, "→", part and part:GetFullName() or "NOT FOUND")
-        end
-        Rayfield:Notify({ Title="Debug", Content="ดูผลใน console (F9)", Duration=3 })
-    end,
-})
-
--- ══════════════════════════════
--- MISC TAB
--- ══════════════════════════════
-local MiscTab = Window:CreateTab("Misc", 4483345998)
-MiscTab:CreateSection("Settings")
-
-MiscTab:CreateToggle({
-    Name = "Anti AFK", CurrentValue=false, Flag="AntiAFK",
-    Callback = function(v)
-        if v then
-            local vp = game:GetService("VirtualUser")
-            Players.LocalPlayer.Idled:Connect(function()
-                vp:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                task.wait(1)
-                vp:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            end)
-        end
-    end,
-})
-
-Rayfield:LoadConfiguration()
 -- ══════════════════════════════
 -- AUTO USE TOOL TAB
 -- ══════════════════════════════
 local ToolTab = Window:CreateTab("Auto Use Tool", 4483345998)
 ToolTab:CreateSection("Auto Drink Juice")
-
 local autoToolRunning = false
 local toolDelay = 0.5
-
 local function getJuiceTools()
-    local backpack = player:FindFirstChild("Backpack")
-    local char = player.Character
-    local list = {}
-
-    local function checkAdd(item)
-        if item and item:IsA("Tool") and item.Name:find("Juice") then
-            table.insert(list, item)
-        end
-    end
-
-    if backpack then
-        for _, item in ipairs(backpack:GetChildren()) do
-            checkAdd(item)
-        end
-    end
-    if char then
-        for _, item in ipairs(char:GetChildren()) do
-            checkAdd(item)
-        end
-    end
-
+    local bp=player:FindFirstChild("Backpack") local char=player.Character local list={}
+    local function chk(item) if item and item:IsA("Tool") and item.Name:find("Juice") then table.insert(list,item) end end
+    if bp then for _,i in ipairs(bp:GetChildren()) do chk(i) end end
+    if char then for _,i in ipairs(char:GetChildren()) do chk(i) end end
     return list
 end
-
 local function autoToolLoop()
     while autoToolRunning do
-        local juices = getJuiceTools()
-        if #juices == 0 then
-            task.wait(2)
+        local juices=getJuiceTools()
+        if #juices==0 then task.wait(2)
         else
-            for _, tool in ipairs(juices) do
+            for _,tool in ipairs(juices) do
                 if not autoToolRunning then break end
-
-                local char = player.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local char=player.Character local hum=char and char:FindFirstChildOfClass("Humanoid")
                 if not hum then task.wait(0.2) continue end
-
-                -- Equip
-                pcall(function() hum:EquipTool(tool) end)
-                task.wait(0.2)
-
-                -- Activate (กิน)
-                local equipped = char:FindFirstChild(tool.Name)
-                if equipped then
-                    pcall(function() equipped:Activate() end)
-                end
-
+                pcall(function() hum:EquipTool(tool) end) task.wait(0.2)
+                local eq=char:FindFirstChild(tool.Name)
+                if eq then pcall(function() eq:Activate() end) end
                 task.wait(toolDelay)
             end
         end
     end
 end
-
-ToolTab:CreateToggle({
-    Name = "Auto Drink Juice",
-    CurrentValue = false,
-    Flag = "AutoUseTool",
-    Description = "Equip และกินทุก Juice ใน Backpack วนซ้ำ",
-    Callback = function(v)
-        autoToolRunning = v
-        if v then task.spawn(autoToolLoop) end
-        Rayfield:Notify({
-            Title = "Juice",
-            Content = v and "เริ่ม Auto Drink แล้ว!" or "หยุดแล้ว",
-            Duration = 2
-        })
-    end,
-})
-
-ToolTab:CreateSlider({
-    Name = "Delay ระหว่าง Juice",
-    Range = {0.1, 5},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = 0.5,
-    Flag = "ToolDelay",
-    Callback = function(v)
-        toolDelay = v
-    end,
-})
+ToolTab:CreateToggle({ Name="Auto Drink Juice", CurrentValue=false, Flag="AutoUseTool", Description="Equip และกินทุก Juice ใน Backpack วนซ้ำ",
+    Callback=function(v) autoToolRunning=v if v then task.spawn(autoToolLoop) end Rayfield:Notify({Title="Juice",Content=v and "เริ่ม!" or "หยุด",Duration=2}) end })
+ToolTab:CreateSlider({ Name="Delay ระหว่าง Juice", Range={0.1,5}, Increment=0.1, Suffix="s", CurrentValue=0.5, Flag="ToolDelay", Callback=function(v) toolDelay=v end })
 
 -- ══════════════════════════════
 -- BUY DRINK TAB
 -- ══════════════════════════════
 local DrinkTab = Window:CreateTab("Buy Drink", 4483345998)
 DrinkTab:CreateSection("Better Drink Merchant")
-
 local drinkAmount = 1
-
-local drinkList = {
-    { name = "Smoothie+", label = "Smoothie+ [Defense]" },
-    { name = "Cider+",    label = "Cider+ [Melee]"     },
-    { name = "Lemonade+", label = "Lemonade+ [Sniper]" },
-    { name = "Juice+",    label = "Juice+ [Sword]"     },
-}
-
-local function getMerchant()
-    local merchantObj = player:FindFirstChild("CurrentMerchant")
-    return merchantObj and merchantObj.Value
-end
-
+local drinkList = { {name="Smoothie+",label="Smoothie+ [Defense]"}, {name="Cider+",label="Cider+ [Melee]"}, {name="Lemonade+",label="Lemonade+ [Sniper]"}, {name="Juice+",label="Juice+ [Sword]"} }
+local function getMerchant() local m=player:FindFirstChild("CurrentMerchant") return m and m.Value end
 local function buyDrink(drinkName, amount)
-    local merchant = getMerchant()
+    local merchant=getMerchant()
     if not merchant then
-        -- teleport ไปหา NPC ก่อนแล้ว retry
-        local npc = workspace:FindFirstChild("Ignore")
-            and workspace.Ignore:FindFirstChild("NPCs")
-            and workspace.Ignore.NPCs:FindFirstChild("Shop")
-            and workspace.Ignore.NPCs.Shop:FindFirstChild("Better Drink Merchant")
+        local npc=workspace:FindFirstChild("Ignore") and workspace.Ignore:FindFirstChild("NPCs") and workspace.Ignore.NPCs:FindFirstChild("Shop") and workspace.Ignore.NPCs.Shop:FindFirstChild("Better Drink Merchant")
         if npc then
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local root = npc:FindFirstChild("HumanoidRootPart")
-                or npc.PrimaryPart
-                or npc:FindFirstChildWhichIsA("BasePart")
-            if hrp and root then
-                hrp.CFrame = root.CFrame * CFrame.new(0, 0, 3)
-                task.wait(0.5)
-                merchant = getMerchant()
-            end
+            local char=player.Character local hrp=char and char:FindFirstChild("HumanoidRootPart")
+            local root=npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart or npc:FindFirstChildWhichIsA("BasePart")
+            if hrp and root then hrp.CFrame=root.CFrame*CFrame.new(0,0,3) task.wait(0.5) merchant=getMerchant() end
         end
     end
-
-    if not merchant then
-        Rayfield:Notify({ Title="Error", Content="ไปคุย Better Drink Merchant ก่อน!", Duration=3 })
-        return
-    end
-
-    fire("ShopBuy", { drinkName, merchant, amount })
-    Rayfield:Notify({
-        Title = "Buy Drink",
-        Content = "ซื้อ " .. drinkName .. " x" .. amount .. " แล้ว!",
-        Duration = 2
-    })
+    if not merchant then Rayfield:Notify({Title="Error",Content="ไปคุย Better Drink Merchant ก่อน!",Duration=3}) return end
+    fire("ShopBuy", {drinkName, merchant, amount})
+    Rayfield:Notify({Title="Buy Drink", Content="ซื้อ "..drinkName.." x"..amount, Duration=2})
 end
-
--- Slider จำนวน
-DrinkTab:CreateSlider({
-    Name = "จำนวนที่จะซื้อ",
-    Range = {1, 999},
-    Increment = 1,
-    Suffix = "x",
-    CurrentValue = 1,
-    Flag = "DrinkAmount",
-    Callback = function(v)
-        drinkAmount = v
-    end,
-})
-
--- ปุ่ม Buy แยกแต่ละตัว
+DrinkTab:CreateSlider({ Name="จำนวนที่จะซื้อ", Range={1,999}, Increment=1, Suffix="x", CurrentValue=1, Flag="DrinkAmount", Callback=function(v) drinkAmount=v end })
 for _, drink in ipairs(drinkList) do
-    DrinkTab:CreateButton({
-        Name = "ซื้อ " .. drink.label,
-        Description = "ซื้อ " .. drink.name .. " ตามจำนวนที่ตั้ง",
-        Callback = function()
-            buyDrink(drink.name, drinkAmount)
-        end,
-    })
+    DrinkTab:CreateButton({ Name="ซื้อ "..drink.label, Description="ซื้อตามจำนวนที่ตั้ง", Callback=function() buyDrink(drink.name, drinkAmount) end })
 end
+DrinkTab:CreateButton({ Name="ซื้อทุกตัว (All)", Description="ซื้อพร้อมกันทุกตัว", Callback=function() for _,d in ipairs(drinkList) do buyDrink(d.name,drinkAmount) task.wait(0.3) end end })
 
--- ปุ่ม Buy ทุกตัวครั้งเดียว
-DrinkTab:CreateButton({
-    Name = "ซื้อทุกตัว (All)",
-    Description = "ซื้อ Smoothie+, Cider+, Lemonade+, Juice+ พร้อมกัน",
-    Callback = function()
-        for _, drink in ipairs(drinkList) do
-            buyDrink(drink.name, drinkAmount)
-            task.wait(0.3)
-        end
-    end,
-})
-
--- Teleport ไปหา NPC
-DrinkTab:CreateButton({
-    Name = "Teleport to Better Drink Merchant",
-    Description = "Teleport ไปหา NPC ทันที",
-    Callback = function()
-        local npc = workspace:FindFirstChild("Ignore")
-            and workspace.Ignore:FindFirstChild("NPCs")
-            and workspace.Ignore.NPCs:FindFirstChild("Shop")
-            and workspace.Ignore.NPCs.Shop:FindFirstChild("Better Drink Merchant")
-        if not npc then
-            Rayfield:Notify({ Title="Error", Content="ไม่พบ Better Drink Merchant!", Duration=3 })
-            return
-        end
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local root = npc:FindFirstChild("HumanoidRootPart")
-            or npc.PrimaryPart
-            or npc:FindFirstChildWhichIsA("BasePart")
-        if hrp and root then
-            hrp.CFrame = root.CFrame * CFrame.new(0, 0, 3)
-            Rayfield:Notify({ Title="Teleport", Content="ไปถึง Better Drink Merchant แล้ว!", Duration=2 })
-        end
-    end,
-})
 -- ══════════════════════════════
--- AUTO FARM TAB (TELEPORT TO MOB)
+-- AUTO FARM TAB (TWEEN AROUND MOB)
 -- ══════════════════════════════
 local FarmTab = Window:CreateTab("Auto Farm", 4483345998)
 FarmTab:CreateSection("Monster Farm")
 local autoFarmRunning  = false
 local farmDelay        = 0.1
 local selectedMonsters = {}
-local bringDistance    = 3
+local orbitDistance    = 5
 local farmDamage       = 50
+local selectedSkills   = {}
+local selectedTools    = {}
 
 local monsterList = {
     "Lv1 Crab","Lv3 Crab","Lv4 Crab","Lv5 Crab","Lv300 King Crab",
@@ -844,7 +331,25 @@ local monsterList = {
     "ThNerdZ",
 }
 
--- หา mob ที่มีชีวิตอยู่ตาม list ที่เลือก
+local skillList = { "x","c","v","b","n","f","g","h","j","k","l" }
+
+local function getBackpackTools()
+    local list = {}
+    local bp = player:FindFirstChild("Backpack")
+    local char = player.Character
+    if bp then
+        for _, t in ipairs(bp:GetChildren()) do
+            if t:IsA("Tool") then table.insert(list, t.Name) end
+        end
+    end
+    if char then
+        for _, t in ipairs(char:GetChildren()) do
+            if t:IsA("Tool") then table.insert(list, t.Name) end
+        end
+    end
+    return list
+end
+
 local function findAliveMonsters(nameList)
     local alive = workspace:FindFirstChild("Alive")
     if not alive then return {} end
@@ -863,17 +368,67 @@ local function findAliveMonsters(nameList)
     return found
 end
 
--- Teleport char ไปหน้า mob (ไม่แตะ mob เลย)
-local function teleportToMob(monHRP)
+-- Tween char วนรอบ mob (เปลี่ยนมุมทีละนิด)
+local orbitAngle = 0
+local function orbitAroundMob(monHRP)
     local char = player.Character
-    if not char then return false end
+    if not char then return end
     local myHRP = char:FindFirstChild("HumanoidRootPart")
-    if not myHRP then return false end
-    myHRP.CFrame = monHRP.CFrame * CFrame.new(0, 0, bringDistance)
-    return true
+    if not myHRP then return end
+    orbitAngle = (orbitAngle + 45) % 360
+    local rad = math.rad(orbitAngle)
+    local offset = Vector3.new(math.cos(rad) * orbitDistance, 0, math.sin(rad) * orbitDistance)
+    local targetCF = CFrame.new(monHRP.Position + offset, monHRP.Position)
+    -- tween ด้วย TweenService
+    local TweenService = game:GetService("TweenService")
+    local info = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(myHRP, info, { CFrame = targetCF })
+    tween:Play()
+    tween.Completed:Wait()
 end
 
--- โจมตี mob (ไม่ขยับ mob)
+-- กดสกิล keyboard
+local function fireSkills()
+    local VirtualInput = game:GetService("VirtualInputManager")
+    local keyMap = {
+        x = Enum.KeyCode.X, c = Enum.KeyCode.C, v = Enum.KeyCode.V,
+        b = Enum.KeyCode.B, n = Enum.KeyCode.N, f = Enum.KeyCode.F,
+        g = Enum.KeyCode.G, h = Enum.KeyCode.H, j = Enum.KeyCode.J,
+        k = Enum.KeyCode.K, l = Enum.KeyCode.L,
+    }
+    for _, sk in ipairs(selectedSkills) do
+        local kc = keyMap[sk]
+        if kc then
+            pcall(function()
+                VirtualInput:SendKeyEvent(true,  kc, false, game)
+                task.wait(0.05)
+                VirtualInput:SendKeyEvent(false, kc, false, game)
+            end)
+            task.wait(0.05)
+        end
+    end
+end
+
+-- Equip tool จาก backpack แล้ว activate
+local function fireTools()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    for _, toolName in ipairs(selectedTools) do
+        local bp = player:FindFirstChild("Backpack")
+        local tool = (bp and bp:FindFirstChild(toolName))
+            or char:FindFirstChild(toolName)
+        if tool then
+            pcall(function() hum:EquipTool(tool) end)
+            task.wait(0.1)
+            local eq = char:FindFirstChild(toolName)
+            if eq then pcall(function() eq:Activate() end) end
+            task.wait(0.05)
+        end
+    end
+end
+
 local function attackMob(entry)
     local model = entry.model
     local hum   = entry.hum
@@ -883,11 +438,8 @@ local function attackMob(entry)
         pcall(function() v1["\t"]("DamageNPC", { model, farmDamage }) end)
     end
     pcall(function() hum:TakeDamage(farmDamage) end)
-    local char = player.Character
-    if char then
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool then pcall(function() tool:Activate() end) end
-    end
+    fireSkills()
+    fireTools()
 end
 
 local function autoFarmLoop()
@@ -899,81 +451,98 @@ local function autoFarmLoop()
         end
 
         local targets = findAliveMonsters(selectedMonsters)
-        if #targets == 0 then
-            task.wait(1)
-            continue
-        end
+        if #targets == 0 then task.wait(1) continue end
 
         for _, entry in ipairs(targets) do
             if not autoFarmRunning then break end
-
-            -- ตรวจสอบ mob ยังมีชีวิตอยู่มั้ย
             local hum = entry.hum
             local hrp = entry.hrp
-            if not hum or not hrp or hum.Health <= 0 then
-                -- mob ตายแล้ว → ข้ามไปตัวถัดไปทันที
-                continue
-            end
 
-            -- Teleport char ไปหน้า mob
-            local ok2 = pcall(teleportToMob, hrp)
-            if not ok2 then continue end
+            if not hum or not hrp or hum.Health <= 0 then continue end
+
+            -- teleport ไปใกล้ mob ก่อน
+            local char = player.Character
+            local myHRP = char and char:FindFirstChild("HumanoidRootPart")
+            if myHRP then
+                myHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, orbitDistance)
+            end
             task.wait(0.05)
 
-            -- วน ตี mob จนกว่า mob จะตาย หรือ farm ถูกปิด
+            -- วน tween + ตี จนกว่า mob จะตาย
             while autoFarmRunning do
-                -- เช็ค mob ยังอยู่มั้ย (อาจถูก despawn / ตายระหว่างตี)
-                if not hum or not hum.Parent or hum.Health <= 0 then
-                    -- mob ตายแล้ว → ออกจาก loop ตี → วาร์ปไปตัวถัดไป
-                    break
-                end
-
-                -- ตี
+                if not hum or not hum.Parent or hum.Health <= 0 then break end
+                pcall(orbitAroundMob, hrp)
                 pcall(attackMob, entry)
                 task.wait(farmDelay)
-
-                -- เช็ค HP หลังตี
-                if hum.Health <= 0 then break end
             end
         end
     end
 end
 
+-- ── UI ──
 FarmTab:CreateDropdown({
-    Name="เลือก Monster", Options=monsterList, CurrentOption={}, Flag="SelectedMonsters", MultipleOptions=true,
-    Description="เลือก Monster ที่ต้องการ Farm",
-    Callback=function(v)
+    Name = "เลือก Monster", Options = monsterList, CurrentOption = {},
+    Flag = "SelectedMonsters", MultipleOptions = true,
+    Description = "เลือก Monster ที่ต้องการ Farm",
+    Callback = function(v)
         selectedMonsters = v
         Rayfield:Notify({ Title="Farm", Content="เลือก "..#v.." monster", Duration=2 })
     end,
 })
+FarmTab:CreateDropdown({
+    Name = "เลือก Skill Keys", Options = skillList, CurrentOption = {},
+    Flag = "SelectedSkills", MultipleOptions = true,
+    Description = "เลือก key สกิลที่จะกดระหว่าง farm (x,c,v,b,n,f,g,h,j,k,l)",
+    Callback = function(v)
+        selectedSkills = v
+        Rayfield:Notify({ Title="Skills", Content="เลือก "..#v.." skill", Duration=2 })
+    end,
+})
+FarmTab:CreateButton({
+    Name = "Refresh Tool List", Description = "โหลด Tool ใหม่จาก Backpack",
+    Callback = function()
+        local tools = getBackpackTools()
+        Rayfield:Notify({ Title="Tools", Content="พบ "..#tools.." tool: "..table.concat(tools,", "), Duration=4 })
+    end,
+})
+FarmTab:CreateInput({
+    Name = "เลือก Tool (พิมพ์ชื่อ คั่นด้วย ,)", PlaceholderText = "เช่น Sword,Pistol",
+    RemoveTextAfterFocusLost = false, Flag = "SelectedTools",
+    Callback = function(v)
+        selectedTools = {}
+        for part in v:gmatch("[^,]+") do
+            table.insert(selectedTools, part:match("^%s*(.-)%s*$"))
+        end
+        Rayfield:Notify({ Title="Tools", Content="เลือก "..#selectedTools.." tool", Duration=2 })
+    end,
+})
 FarmTab:CreateToggle({
-    Name="Auto Farm (Teleport + Kill Loop)", CurrentValue=false, Flag="AutoFarm",
-    Description="วาร์ปไปหา mob ตีจน mob ตาย แล้วไปตัวถัดไป",
-    Callback=function(v)
+    Name = "Auto Farm (Tween + Skill + Tool)", CurrentValue = false, Flag = "AutoFarm",
+    Description = "วาปไปหา mob, tween วนรอบ, กดสกิล และใช้ tool",
+    Callback = function(v)
         autoFarmRunning = v
         if v then task.spawn(autoFarmLoop) end
         Rayfield:Notify({ Title="Farm", Content=v and "เริ่ม Farm!" or "หยุดแล้ว", Duration=2 })
     end,
 })
 FarmTab:CreateSlider({
-    Name="ระยะห่างจาก Mob (Studs)", Range={1,20}, Increment=1,
-    Suffix=" studs", CurrentValue=3, Flag="BringDistance",
-    Callback=function(v) bringDistance = v end,
+    Name = "ระยะวนรอบ Mob (Studs)", Range={1,20}, Increment=1,
+    Suffix=" studs", CurrentValue=5, Flag="OrbitDistance",
+    Callback = function(v) orbitDistance = v end,
 })
 FarmTab:CreateSlider({
-    Name="Damage per Hit", Range={1,9999}, Increment=1,
+    Name = "Damage per Hit", Range={1,9999}, Increment=1,
     Suffix=" dmg", CurrentValue=50, Flag="FarmDamage",
-    Callback=function(v) farmDamage = v end,
+    Callback = function(v) farmDamage = v end,
 })
 FarmTab:CreateSlider({
-    Name="Delay ระหว่าง Hit", Range={0.05,3}, Increment=0.05,
+    Name = "Delay ระหว่าง Hit", Range={0.05,3}, Increment=0.05,
     Suffix="s", CurrentValue=0.1, Flag="FarmDelay",
-    Callback=function(v) farmDelay = v end,
+    Callback = function(v) farmDelay = v end,
 })
 FarmTab:CreateButton({
-    Name="Debug: แสดง Monster ใน Alive", Description="แสดงชื่อ + HP ใน console (F9)",
-    Callback=function()
+    Name = "Debug: แสดง Monster ใน Alive", Description = "แสดงชื่อ + HP ใน console (F9)",
+    Callback = function()
         local alive = workspace:FindFirstChild("Alive")
         if not alive then
             Rayfield:Notify({ Title="Debug", Content="ไม่พบ workspace.Alive!", Duration=3 })
@@ -986,4 +555,88 @@ FarmTab:CreateButton({
         end
         Rayfield:Notify({ Title="Debug", Content="ดูผลใน F9", Duration=3 })
     end,
+})
+
+-- ══════════════════════════════
+-- MISC TAB
+-- ══════════════════════════════
+local MiscTab = Window:CreateTab("Misc", 4483345998)
+MiscTab:CreateSection("Settings")
+MiscTab:CreateToggle({
+    Name="Anti AFK", CurrentValue=false, Flag="AntiAFK",
+    Callback=function(v)
+        if v then
+            local vp=game:GetService("VirtualUser")
+            Players.LocalPlayer.Idled:Connect(function()
+                vp:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                vp:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+        end
+    end,
+})
+
+Rayfield:LoadConfiguration()
+
+
+-- ══════════════════════════════
+-- AIMBOT TAB
+-- ══════════════════════════════
+local LockTab = Window:CreateTab("AIMBOT", 4483345998)
+
+LockTab:CreateToggle({
+    Name = "PVP",
+    CurrentValue = false,
+    Flag = "LOCK",
+
+    Callback = function(Value)
+
+        getgenv().LockEnabled = Value
+
+        task.spawn(function()
+            while getgenv().LockEnabled do
+
+                local ClosestPlayer
+                local ClosestDistance = math.huge
+
+                local LocalCharacter = player.Character
+                local LocalHRP = LocalCharacter and LocalCharacter:FindFirstChild("HumanoidRootPart")
+
+                if LocalHRP then
+                    for _, Plr in ipairs(Players:GetPlayers()) do
+
+                        if Plr ~= player and Plr.Character then
+
+                            local HRP = Plr.Character:FindFirstChild("HumanoidRootPart")
+                            local Humanoid = Plr.Character:FindFirstChild("Humanoid")
+
+                            if HRP and Humanoid and Humanoid.Health > 0 then
+
+                                local Distance = (LocalHRP.Position - HRP.Position).Magnitude
+
+                                if Distance < ClosestDistance then
+                                    ClosestDistance = Distance
+                                    ClosestPlayer = Plr
+                                end
+                            end
+                        end
+                    end
+                end
+
+                if ClosestPlayer and ClosestPlayer.Character then
+                    local HRP = ClosestPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+                    if HRP then
+                        workspace.CurrentCamera.CFrame =
+                            CFrame.new(
+                                workspace.CurrentCamera.CFrame.Position,
+                                HRP.Position
+                            )
+                    end
+                end
+
+                task.wait()
+            end
+        end)
+    end
 })
