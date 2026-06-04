@@ -48,35 +48,103 @@ local Window = Rayfield:CreateWindow({
         Key = { "coz12" },
     },
 })
-
 -- ══════════════════════════════
 -- TELEPORT TAB
 -- ══════════════════════════════
 local TeleportTab = Window:CreateTab("Teleport", 4483345998)
-TeleportTab:CreateSection("NPCs")
-TeleportTab:CreateButton({
-    Name = "Secret Dealer",
-    Description = "Teleport to the hidden Secret Dealer NPC",
-    Callback = function()
-        local character = player.Character or player.CharacterAdded:Wait()
-        local hrp = character:WaitForChild("HumanoidRootPart")
-        local secretFolder = workspace:FindFirstChild("Ignore")
-            and workspace.Ignore:FindFirstChild("NPCs")
-            and workspace.Ignore.NPCs:FindFirstChild("Secret")
-        local dealer = secretFolder and secretFolder:FindFirstChild("Secret Dealer")
-        if not dealer then
-            Rayfield:Notify({ Title="Failed", Content="Secret Dealer not found!", Duration=3 })
-            return
+
+local function tpTo(target)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local root
+    if typeof(target) == "Instance" then
+        if target:IsA("BasePart") then
+            root = target
+        elseif target:IsA("Model") then
+            root = target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")
+        else
+            root = target:FindFirstChildWhichIsA("BasePart")
         end
-        local root = dealer:FindFirstChild("HumanoidRootPart")
-            or dealer.PrimaryPart
-            or dealer:FindFirstChildWhichIsA("BasePart")
-        if root then
-            hrp.CFrame = root.CFrame * CFrame.new(0, 0, 3)
-            Rayfield:Notify({ Title="Teleported!", Content="Arrived at Secret Dealer.", Duration=3 })
-        end
-    end,
-})
+    end
+    if root then
+        hrp.CFrame = root.CFrame * CFrame.new(0, 0, 3)
+        Rayfield:Notify({ Title="Teleport", Content="ไปที่ "..target.Name.." แล้ว!", Duration=2 })
+    else
+        Rayfield:Notify({ Title="Teleport", Content="ไม่พบ target: "..tostring(target), Duration=3 })
+    end
+end
+
+local function getTarget(path)
+    local ok2, result = pcall(path)
+    if ok2 and result then return result end
+    return nil
+end
+
+-- ── Islands ──
+TeleportTab:CreateSection("Islands")
+
+local islandList = {
+    { name = "Snowy Mountains",   fn = function() return workspace.MapFolder.IslandSnowyMountains.Stone:GetChildren()[40] end },
+    { name = "Crescent Mountain", fn = function() return workspace.MapFolder.IslandCrescent.Mountain:GetChildren()[13] end },
+    { name = "Cliffs",            fn = function() return workspace.MapFolder.IslandCliffs.Grass:GetChildren()[7] end },
+    { name = "Island 13",         fn = function() return workspace.MapFolder.Island13.Build.Colorables:GetChildren()[108] end },
+    { name = "Island 8 House",    fn = function() return workspace.MapFolder.Island8.House2:GetChildren()[201] end },
+    { name = "Tree Island",       fn = function() return workspace.MapFolder.IslandTREEA.BigHouse:GetChildren()[320] end },
+    { name = "Alabata",           fn = function() return workspace.MapFolder.Alabata.Model:GetChildren()[7368] end },
+    { name = "Rocky Island",      fn = function() return workspace.MapFolder.IslandRocky:GetChildren()[15] end },
+    { name = "Snowy Mini Mountain",fn = function() return workspace.MapFolder.IslandSnowy.MiniMountain:GetChildren()[6] end },
+    { name = "Cave Island",       fn = function() return workspace.MapFolder.IslandCaver.Stones:GetChildren()[193] end },
+    { name = "Island 11 Moss",    fn = function() return workspace.MapFolder.Island11.Moss:GetChildren()[85] end },
+    { name = "Z Island 222",      fn = function() return workspace.MapFolder.Z_Island222.Model:GetChildren()[200] end },
+    { name = "Jail Island Beach", fn = function() return workspace.MapFolder["Jail Islands "].Beach end },
+    { name = "Evil Island",       fn = function() return workspace.MapFolder.IslandEvil.IslandEvil:GetChildren()[3] end },
+    { name = "Senna Island",      fn = function() return workspace.MapFolder.IslandSenna.Objects:GetChildren()[47] end },
+    { name = "Kai Island Aura",   fn = function() return workspace.MapFolder.IslandKai.AuraReceptical end },
+    { name = "Island 12 Rocks",   fn = function() return workspace.MapFolder.Island12.Rocks:GetChildren()[28] end },
+    { name = "Rocky Islands",     fn = function() return workspace.MapFolder["Rocky Islands"]:GetChildren()[86] end },
+    { name = "Marine Ford",       fn = function() return workspace.Ignore.NPCs.Islands["Reach Marine Ford"] end },
+}
+
+for _, loc in ipairs(islandList) do
+    TeleportTab:CreateButton({
+        Name = loc.name,
+        Description = "Teleport ไป "..loc.name,
+        Callback = function()
+            local target = getTarget(loc.fn)
+            if target then
+                tpTo(target)
+            else
+                Rayfield:Notify({ Title="Error", Content="ไม่พบ "..loc.name, Duration=3 })
+            end
+        end,
+    })
+end
+
+-- ── Soul Rooms ──
+TeleportTab:CreateSection("Soul Rooms")
+
+local soulList = {
+    { name = "Altar 1",   fn = function() return workspace.SoulRooms.Altar1 end },
+    { name = "Altar 2",   fn = function() return workspace.SoulRooms.Altar2 end },
+    { name = "Altar 3",   fn = function() return workspace.SoulRooms.Altar3 end },
+    { name = "Altar 4",   fn = function() return workspace.SoulRooms.Altar4 end },
+    { name = "Soul Room", fn = function() return workspace.SoulRooms.SoulRoom end },
+}
+
+for _, loc in ipairs(soulList) do
+    TeleportTab:CreateButton({
+        Name = loc.name,
+        Description = "Teleport ไป "..loc.name,
+        Callback = function()
+            local target = getTarget(loc.fn)
+            if target then
+                tpTo(target)
+            else
+                Rayfield:Notify({ Title="Error", Content="ไม่พบ "..loc.name, Duration=3 })
+            end
+        end,
+    })
+end
 
 -- ══════════════════════════════
 -- AUTO CHEST TAB
