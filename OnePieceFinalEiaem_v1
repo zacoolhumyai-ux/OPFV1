@@ -818,301 +818,172 @@ DrinkTab:CreateButton({
     end,
 })
 -- ══════════════════════════════
--- AUTO FARM TAB
+-- AUTO FARM TAB (TELEPORT TO MOB)
 -- ══════════════════════════════
 local FarmTab = Window:CreateTab("Auto Farm", 4483345998)
 FarmTab:CreateSection("Monster Farm")
-
-local autoFarmRunning = false
-local farmDelay = 0.1
+local autoFarmRunning  = false
+local farmDelay        = 0.1
 local selectedMonsters = {}
-local teleportDistance = 3
+local bringDistance    = 3
+local farmDamage       = 50
 
 local monsterList = {
-    "Lv1 Crab", "Lv3 Crab", "Lv4 Crab", "Lv5 Crab", "Lv300 King Crab",
-    "Lv4 Boar", "Lv11 Boar", "Lv12 Boar", "Lv14 Boar", "Lv15 Boar", "Lv16 Boar",
-    "Lv9 Bandit Traitor", "Lv14 Bandit", "Lv15 Bandit",
-    "Lv12 Thug", "Lv15 Thug", "Lv17 Thug", "Lv22 Thug",
-    "Lv23 Thug", "Lv24 Thug", "Lv30 Thug", "Lv40 Thug",
-    "Lv2 Angry Bob", "Lv22 Angry Bobby", "Lv24 Angry Bobbi",
-    "Lv29 Angry Bobber", "Lv35 Angry Bobb",
-    "Lv4 Angry Freddy", "Lv24 Fred", "Lv28 Fredde",
-    "Lv28 Freyd", "Lv28 Friedrich", "Lv29 Frued",
-    "Lv32 Fredric", "Lv34 Freddi",
-    "Lv20 Gunslinger", "Lv24 Gunslinger", "Lv36 Gunslinger",
-    "Lv42 Gunslinger", "Lv50 Gunslinger",
-    "Lv20 Thief", "Lv32 Thief",
-    "Lv360 Bruno", "ThNerdZ",
+    "Lv1 Crab","Lv3 Crab","Lv4 Crab","Lv5 Crab","Lv300 King Crab",
+    "Lv4 Boar","Lv11 Boar","Lv12 Boar","Lv14 Boar","Lv15 Boar","Lv16 Boar",
+    "Lv9 Bandit Traitor","Lv14 Bandit","Lv15 Bandit",
+    "Lv12 Thug","Lv15 Thug","Lv17 Thug","Lv22 Thug","Lv23 Thug","Lv24 Thug","Lv30 Thug","Lv40 Thug",
+    "Lv2 Angry Bob","Lv22 Angry Bobby","Lv24 Angry Bobbi","Lv29 Angry Bobber","Lv35 Angry Bobb",
+    "Lv4 Angry Freddy","Lv24 Fred","Lv28 Fredde","Lv28 Freyd","Lv28 Friedrich","Lv29 Frued","Lv32 Fredric","Lv34 Freddi",
+    "Lv20 Gunslinger","Lv24 Gunslinger","Lv36 Gunslinger","Lv42 Gunslinger","Lv50 Gunslinger",
+    "Lv20 Thief","Lv32 Thief",
+    "Lv186 Cave Demon","Lv188 Cave Demon","Lv198 Cave Demon","Lv219 Cave Demon",
+    "Lv40 Cave Demon [Weakened]",
+    "Lv360 Bruno","Lv440 Buster","Lv500 Bucky",
+    "Lv2000 Crocodile","Lv2000 Vokun","Lv8000 Gunner Captain",
+    "ThNerdZ",
 }
 
-local function getMonsterHRP(monster)
-    if not monster then return nil end
-    local hrp = monster:FindFirstChild("HumanoidRootPart")
-    if hrp then return hrp end
-    return monster.PrimaryPart or monster:FindFirstChildWhichIsA("BasePart")
+-- หา mob ที่มีชีวิตอยู่ตาม list ที่เลือก
+local function findAliveMonsters(nameList)
+    local alive = workspace:FindFirstChild("Alive")
+    if not alive then return {} end
+    local nameSet = {}
+    for _, n in ipairs(nameList) do nameSet[n] = true end
+    local found = {}
+    for _, model in ipairs(alive:GetChildren()) do
+        if nameSet[model.Name] then
+            local hum = model:FindFirstChildOfClass("Humanoid")
+            local hrp = model:FindFirstChild("HumanoidRootPart")
+            if hum and hrp and hum.Health > 0 then
+                table.insert(found, { model=model, hum=hum, hrp=hrp })
+            end
+        end
+    end
+    return found
 end
 
-local function getMonsterHumanoid(monster)
-    if not monster then return nil end
-    return monster:FindFirstChildOfClass("Humanoid")
-        or monster:FindFirstChildWhichIsA("Humanoid")
-end
-
-local function teleportToMonster(monster)
+-- Teleport char ไปหน้า mob (ไม่แตะ mob เลย)
+local function teleportToMob(monHRP)
     local char = player.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local monHRP = getMonsterHRP(monster)
-    if not monHRP then return end
-    hrp.CFrame = monHRP.CFrame * CFrame.new(0, 0, teleportDistance)
+    if not char then return false end
+    local myHRP = char:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return false end
+    myHRP.CFrame = monHRP.CFrame * CFrame.new(0, 0, bringDistance)
+    return true
+end
+
+-- โจมตี mob (ไม่ขยับ mob)
+local function attackMob(entry)
+    local model = entry.model
+    local hum   = entry.hum
+    if not (model and hum) or hum.Health <= 0 then return end
+    if v1 then
+        pcall(function() v1["\t"]("MobHit",    { model, farmDamage }) end)
+        pcall(function() v1["\t"]("DamageNPC", { model, farmDamage }) end)
+    end
+    pcall(function() hum:TakeDamage(farmDamage) end)
+    local char = player.Character
+    if char then
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then pcall(function() tool:Activate() end) end
+    end
 end
 
 local function autoFarmLoop()
     while autoFarmRunning do
         if #selectedMonsters == 0 then
-            Rayfield:Notify({
-                Title = "Farm",
-                Content = "ยังไม่ได้เลือก Monster!",
-                Duration = 2
-            })
+            Rayfield:Notify({ Title="Farm", Content="ยังไม่ได้เลือก Monster!", Duration=2 })
             task.wait(3)
-        else
-            for _, name in ipairs(selectedMonsters) do
-                if not autoFarmRunning then break end
+            continue
+        end
 
-                local alive = workspace:FindFirstChild("Alive")
-                local monster = alive and alive:FindFirstChild(name)
+        local targets = findAliveMonsters(selectedMonsters)
+        if #targets == 0 then
+            task.wait(1)
+            continue
+        end
 
-                if monster then
-                    local hum = getMonsterHumanoid(monster)
-                    if hum and hum.Health > 0 then
-                        pcall(teleportToMonster, monster)
-                        task.wait(farmDelay)
-                    else
-                        -- monster ตายแล้ว ข้ามไปตัวถัดไป
-                        task.wait(0.5)
-                    end
-                else
-                    task.wait(0.5)
+        for _, entry in ipairs(targets) do
+            if not autoFarmRunning then break end
+
+            -- ตรวจสอบ mob ยังมีชีวิตอยู่มั้ย
+            local hum = entry.hum
+            local hrp = entry.hrp
+            if not hum or not hrp or hum.Health <= 0 then
+                -- mob ตายแล้ว → ข้ามไปตัวถัดไปทันที
+                continue
+            end
+
+            -- Teleport char ไปหน้า mob
+            local ok2 = pcall(teleportToMob, hrp)
+            if not ok2 then continue end
+            task.wait(0.05)
+
+            -- วน ตี mob จนกว่า mob จะตาย หรือ farm ถูกปิด
+            while autoFarmRunning do
+                -- เช็ค mob ยังอยู่มั้ย (อาจถูก despawn / ตายระหว่างตี)
+                if not hum or not hum.Parent or hum.Health <= 0 then
+                    -- mob ตายแล้ว → ออกจาก loop ตี → วาร์ปไปตัวถัดไป
+                    break
                 end
+
+                -- ตี
+                pcall(attackMob, entry)
+                task.wait(farmDelay)
+
+                -- เช็ค HP หลังตี
+                if hum.Health <= 0 then break end
             end
         end
     end
 end
 
 FarmTab:CreateDropdown({
-    Name = "เลือก Monster (เลือกได้หลายตัว)",
-    Options = monsterList,
-    CurrentOption = {},
-    Flag = "SelectedMonsters",
-    MultipleOptions = true,
-    Description = "เลือก Monster ที่ต้องการ Teleport ไปหา",
-    Callback = function(v)
+    Name="เลือก Monster", Options=monsterList, CurrentOption={}, Flag="SelectedMonsters", MultipleOptions=true,
+    Description="เลือก Monster ที่ต้องการ Farm",
+    Callback=function(v)
         selectedMonsters = v
-        Rayfield:Notify({
-            Title = "Farm",
-            Content = "เลือก " .. #v .. " monster",
-            Duration = 2
-        })
+        Rayfield:Notify({ Title="Farm", Content="เลือก "..#v.." monster", Duration=2 })
     end,
 })
-
 FarmTab:CreateToggle({
-    Name = "Auto Farm (Teleport)",
-    CurrentValue = false,
-    Flag = "AutoFarm",
-    Description = "Teleport ไปหา Monster ที่เลือกวนซ้ำ",
-    Callback = function(v)
+    Name="Auto Farm (Teleport + Kill Loop)", CurrentValue=false, Flag="AutoFarm",
+    Description="วาร์ปไปหา mob ตีจน mob ตาย แล้วไปตัวถัดไป",
+    Callback=function(v)
         autoFarmRunning = v
         if v then task.spawn(autoFarmLoop) end
-        Rayfield:Notify({
-            Title = "Farm",
-            Content = v and ("เริ่ม Farm " .. #selectedMonsters .. " monster") or "หยุดแล้ว",
-            Duration = 2
-        })
+        Rayfield:Notify({ Title="Farm", Content=v and "เริ่ม Farm!" or "หยุดแล้ว", Duration=2 })
     end,
 })
-
--- Slider ระยะ teleport ห่างจาก monster
 FarmTab:CreateSlider({
-    Name = "ระยะห่างจาก Monster (Studs)",
-    Range = {0, 20},
-    Increment = 1,
-    Suffix = " studs",
-    CurrentValue = 3,
-    Flag = "TeleportDistance",
-    Callback = function(v)
-        teleportDistance = v
-    end,
+    Name="ระยะห่างจาก Mob (Studs)", Range={1,20}, Increment=1,
+    Suffix=" studs", CurrentValue=3, Flag="BringDistance",
+    Callback=function(v) bringDistance = v end,
 })
-
 FarmTab:CreateSlider({
-    Name = "Delay ระหว่าง Monster",
-    Range = {0.05, 3},
-    Increment = 0.05,
-    Suffix = "s",
-    CurrentValue = 0.1,
-    Flag = "FarmDelay",
-    Callback = function(v)
-        farmDelay = v
-    end,
+    Name="Damage per Hit", Range={1,9999}, Increment=1,
+    Suffix=" dmg", CurrentValue=50, Flag="FarmDamage",
+    Callback=function(v) farmDamage = v end,
 })
-
+FarmTab:CreateSlider({
+    Name="Delay ระหว่าง Hit", Range={0.05,3}, Increment=0.05,
+    Suffix="s", CurrentValue=0.1, Flag="FarmDelay",
+    Callback=function(v) farmDelay = v end,
+})
 FarmTab:CreateButton({
-    Name = "Debug: แสดง Monster ใน Alive",
-    Description = "แสดงรายชื่อทั้งหมดใน console (F9)",
-    Callback = function()
+    Name="Debug: แสดง Monster ใน Alive", Description="แสดงชื่อ + HP ใน console (F9)",
+    Callback=function()
         local alive = workspace:FindFirstChild("Alive")
         if not alive then
             Rayfield:Notify({ Title="Debug", Content="ไม่พบ workspace.Alive!", Duration=3 })
             return
         end
-        print("=== workspace.Alive (" .. #alive:GetChildren() .. " ตัว) ===")
+        print("=== workspace.Alive ("..#alive:GetChildren().." ตัว) ===")
         for i, v in ipairs(alive:GetChildren()) do
-            print(i, v.Name)
+            local h = v:FindFirstChildOfClass("Humanoid")
+            print(i, v.Name, h and ("HP:"..h.Health) or "(no Humanoid)")
         end
-        Rayfield:Notify({ Title="Debug", Content="ดูผลใน console (F9)", Duration=3 })
-    end,
-})
-
--- ══════════════════════════════
--- FLINTLOCK TAB
--- ══════════════════════════════
-local FlintlockTab = Window:CreateTab("Flintlock", 4483345998)
-FlintlockTab:CreateSection("Fast Attack")
-
-local autoFlintlockRunning = false
-local flintlockDelay = 0.35
-local flintlockDamage = 25
-
-local function getFlintlock()
-    local char = player.Character
-    if not char then return nil end
-    local alive = char:FindFirstChild("Alive")
-    if not alive then return nil end
-    local thNerdZ = alive:FindFirstChild("ThNerdZ")
-    if not thNerdZ then return nil end
-    return thNerdZ:FindFirstChild("Flintlock")
-end
-
-local function doFlintlockAttack()
-    local flintlock = getFlintlock()
-    if not flintlock then return false end
-
-    local weld         = flintlock:FindFirstChild("WeldConstraint")
-    local firePosition = flintlock:FindFirstChild("FirePosition")
-    local handle       = flintlock:FindFirstChild("Handle")
-
-    if not (weld and firePosition and handle) then return false end
-
-    -- Raycast จาก FirePosition ตาม LookVector ของ Handle
-    local origin    = firePosition.WorldPosition
-    local direction = handle.CFrame.LookVector * 120
-
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = { player.Character }
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-    local result = workspace:Raycast(origin, direction, rayParams)
-
-    if result then
-        local hitChar = result.Instance:FindAncestorOfClass("Model")
-        if hitChar then
-            local hum = hitChar:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 and hitChar ~= player.Character then
-                hum:TakeDamage(flintlockDamage)
-            end
-        end
-    end
-
-    -- Recoil: ปิด WeldConstraint ชั่วคราว
-    weld.Enabled = false
-    task.delay(0.05, function()
-        if weld and weld.Parent then
-            weld.Enabled = true
-        end
-    end)
-
-    return true
-end
-
-local function autoFlintlockLoop()
-    while autoFlintlockRunning do
-        local ok2, err = pcall(doFlintlockAttack)
-        if not ok2 then
-            warn("Flintlock error:", err)
-        end
-        task.wait(flintlockDelay)
-    end
-end
-
-FlintlockTab:CreateToggle({
-    Name = "Auto Fast Attack",
-    CurrentValue = false,
-    Flag = "AutoFlintlock",
-    Description = "ยิง Flintlock อัตโนมัติด้วย Raycast + Recoil Effect",
-    Callback = function(v)
-        autoFlintlockRunning = v
-        if v then task.spawn(autoFlintlockLoop) end
-        Rayfield:Notify({
-            Title = "Flintlock",
-            Content = v and "เริ่ม Fast Attack แล้ว!" or "หยุดแล้ว",
-            Duration = 2
-        })
-    end,
-})
-
-FlintlockTab:CreateSlider({
-    Name = "Attack Speed (Delay)",
-    Range = {0.05, 2},
-    Increment = 0.05,
-    Suffix = "s",
-    CurrentValue = 0.35,
-    Flag = "FlintlockDelay",
-    Callback = function(v)
-        flintlockDelay = v
-    end,
-})
-
-FlintlockTab:CreateSlider({
-    Name = "Damage per Shot",
-    Range = {1, 100},
-    Increment = 1,
-    Suffix = " dmg",
-    CurrentValue = 25,
-    Flag = "FlintlockDamage",
-    Callback = function(v)
-        flintlockDamage = v
-    end,
-})
-
-FlintlockTab:CreateButton({
-    Name = "ยิงครั้งเดียว (Manual)",
-    Description = "ยิง Flintlock 1 ครั้งทันที",
-    Callback = function()
-        local ok2, err = pcall(doFlintlockAttack)
-        if ok2 then
-            Rayfield:Notify({ Title="Flintlock", Content="ยิงแล้ว!", Duration=2 })
-        else
-            Rayfield:Notify({ Title="Error", Content=tostring(err), Duration=3 })
-        end
-    end,
-})
-
-FlintlockTab:CreateButton({
-    Name = "Debug: เช็ค Flintlock Parts",
-    Description = "ตรวจสอบว่าพบ Parts ครบหรือไม่ (F9)",
-    Callback = function()
-        local fl = getFlintlock()
-        if not fl then
-            Rayfield:Notify({ Title="Debug", Content="ไม่พบ Flintlock!", Duration=3 })
-            return
-        end
-        print("=== Flintlock Parts ===")
-        print("WeldConstraint:", fl:FindFirstChild("WeldConstraint") and "✓" or "✗")
-        print("FirePosition:  ", fl:FindFirstChild("FirePosition")   and "✓" or "✗")
-        print("Handle:        ", fl:FindFirstChild("Handle")         and "✓" or "✗")
-        Rayfield:Notify({ Title="Debug", Content="ดูผลใน console (F9)", Duration=3 })
+        Rayfield:Notify({ Title="Debug", Content="ดูผลใน F9", Duration=3 })
     end,
 })
