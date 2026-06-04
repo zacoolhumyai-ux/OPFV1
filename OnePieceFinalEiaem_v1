@@ -37,7 +37,16 @@ local Window = Rayfield:CreateWindow({
     DisableRayfieldPrompts = false,
     DisableBuildWarnings = false,
     ConfigurationSaving = { Enabled=true, FolderName="OPFinalNerd", FileName="Config" },
-    KeySystem = false,
+    KeySystem = true,
+    KeySettings = {
+        Title = "One Piece Final Nerd",
+        Subtitle = "Key Required",
+        Note = "ติดต่อรับ Key ที่ Discord",
+        FileName = "OPFinalNerdKey",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = { "coz12" },
+    },
 })
 
 -- ══════════════════════════════
