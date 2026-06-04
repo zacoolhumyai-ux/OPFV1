@@ -80,29 +80,57 @@ local function getTarget(path)
     return nil
 end
 
+-- ── NPCs ──
+TeleportTab:CreateSection("NPCs")
+
+TeleportTab:CreateButton({
+    Name = "Secret Dealer",
+    Description = "Teleport ไปหา Secret Dealer",
+    Callback = function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+        local ok2, dealer = pcall(function()
+            return workspace.Ignore.NPCs.Secret:FindFirstChild("Secret Dealer")
+        end)
+        if not ok2 or not dealer then
+            Rayfield:Notify({ Title="Error", Content="ไม่พบ Secret Dealer!", Duration=3 })
+            return
+        end
+        local root = dealer:FindFirstChild("HumanoidRootPart")
+            or dealer.PrimaryPart
+            or dealer:FindFirstChildWhichIsA("BasePart")
+        if root then
+            hrp.CFrame = root.CFrame * CFrame.new(0, 0, 3)
+            Rayfield:Notify({ Title="Teleport", Content="ไปที่ Secret Dealer แล้ว!", Duration=2 })
+        else
+            Rayfield:Notify({ Title="Error", Content="ไม่พบ root part!", Duration=3 })
+        end
+    end,
+})
+
 -- ── Islands ──
 TeleportTab:CreateSection("Islands")
 
 local islandList = {
-    { name = "Snowy Mountains",   fn = function() return workspace.MapFolder.IslandSnowyMountains.Stone:GetChildren()[40] end },
-    { name = "Crescent Mountain", fn = function() return workspace.MapFolder.IslandCrescent.Mountain:GetChildren()[13] end },
-    { name = "Cliffs",            fn = function() return workspace.MapFolder.IslandCliffs.Grass:GetChildren()[7] end },
-    { name = "Island 13",         fn = function() return workspace.MapFolder.Island13.Build.Colorables:GetChildren()[108] end },
-    { name = "Island 8 House",    fn = function() return workspace.MapFolder.Island8.House2:GetChildren()[201] end },
-    { name = "Tree Island",       fn = function() return workspace.MapFolder.IslandTREEA.BigHouse:GetChildren()[320] end },
-    { name = "Alabata",           fn = function() return workspace.MapFolder.Alabata.Model:GetChildren()[7368] end },
-    { name = "Rocky Island",      fn = function() return workspace.MapFolder.IslandRocky:GetChildren()[15] end },
-    { name = "Snowy Mini Mountain",fn = function() return workspace.MapFolder.IslandSnowy.MiniMountain:GetChildren()[6] end },
-    { name = "Cave Island",       fn = function() return workspace.MapFolder.IslandCaver.Stones:GetChildren()[193] end },
-    { name = "Island 11 Moss",    fn = function() return workspace.MapFolder.Island11.Moss:GetChildren()[85] end },
-    { name = "Z Island 222",      fn = function() return workspace.MapFolder.Z_Island222.Model:GetChildren()[200] end },
-    { name = "Jail Island Beach", fn = function() return workspace.MapFolder["Jail Islands "].Beach end },
-    { name = "Evil Island",       fn = function() return workspace.MapFolder.IslandEvil.IslandEvil:GetChildren()[3] end },
-    { name = "Senna Island",      fn = function() return workspace.MapFolder.IslandSenna.Objects:GetChildren()[47] end },
-    { name = "Kai Island Aura",   fn = function() return workspace.MapFolder.IslandKai.AuraReceptical end },
-    { name = "Island 12 Rocks",   fn = function() return workspace.MapFolder.Island12.Rocks:GetChildren()[28] end },
-    { name = "Rocky Islands",     fn = function() return workspace.MapFolder["Rocky Islands"]:GetChildren()[86] end },
-    { name = "Marine Ford",       fn = function() return workspace.Ignore.NPCs.Islands["Reach Marine Ford"] end },
+    { name = "Snowy Mountains",    fn = function() return workspace.MapFolder.IslandSnowyMountains.Stone:GetChildren()[40] end },
+    { name = "Crescent Mountain",  fn = function() return workspace.MapFolder.IslandCrescent.Mountain:GetChildren()[13] end },
+    { name = "Cliffs",             fn = function() return workspace.MapFolder.IslandCliffs.Grass:GetChildren()[7] end },
+    { name = "Island 13",          fn = function() return workspace.MapFolder.Island13.Build.Colorables:GetChildren()[108] end },
+    { name = "Island 8 House",     fn = function() return workspace.MapFolder.Island8.House2:GetChildren()[201] end },
+    { name = "Tree Island",        fn = function() return workspace.MapFolder.IslandTREEA.BigHouse:GetChildren()[320] end },
+    { name = "Alabata",            fn = function() return workspace.MapFolder.Alabata.Model:GetChildren()[7368] end },
+    { name = "Rocky Island",       fn = function() return workspace.MapFolder.IslandRocky:GetChildren()[15] end },
+    { name = "Snowy Mini Mountain", fn = function() return workspace.MapFolder.IslandSnowy.MiniMountain:GetChildren()[6] end },
+    { name = "Cave Island",        fn = function() return workspace.MapFolder.IslandCaver.Stones:GetChildren()[193] end },
+    { name = "Island 11 Moss",     fn = function() return workspace.MapFolder.Island11.Moss:GetChildren()[85] end },
+    { name = "Z Island 222",       fn = function() return workspace.MapFolder.Z_Island222.Model:GetChildren()[200] end },
+    { name = "Jail Island Beach",  fn = function() return workspace.MapFolder["Jail Islands "].Beach end },
+    { name = "Evil Island",        fn = function() return workspace.MapFolder.IslandEvil.IslandEvil:GetChildren()[3] end },
+    { name = "Senna Island",       fn = function() return workspace.MapFolder.IslandSenna.Objects:GetChildren()[47] end },
+    { name = "Kai Island Aura",    fn = function() return workspace.MapFolder.IslandKai.AuraReceptical end },
+    { name = "Island 12 Rocks",    fn = function() return workspace.MapFolder.Island12.Rocks:GetChildren()[28] end },
+    { name = "Rocky Islands",      fn = function() return workspace.MapFolder["Rocky Islands"]:GetChildren()[86] end },
+    { name = "Marine Ford",        fn = function() return workspace.Ignore.NPCs.Islands["Reach Marine Ford"] end },
 }
 
 for _, loc in ipairs(islandList) do
@@ -145,7 +173,6 @@ for _, loc in ipairs(soulList) do
         end,
     })
 end
-
 -- ══════════════════════════════
 -- AUTO CHEST TAB
 -- ══════════════════════════════
